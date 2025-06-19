@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and user management
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  role           Role      @default(USER)
+  
+  // Relations
+  comments       Comment[]
+  bookmarks      Bookmark[]
+  likes          Like[]
+}
+
+// Comment model for user interactions with articles
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  
+  @@index([userId])
+  @@index([articleId])
+}
+
+// Bookmark model to save user's favorite articles
+model Bookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
+}
+
+// Like model for user reactions to articles
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
+}
+
+// ArticleMetadata model to store metrics and additional data for Sanity articles
+model ArticleMetadata {
+  id            String   @id
+  viewCount     Int      @default(0)
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// User roles for authorization
+enum Role {
+  USER
+  ADMIN
+}
